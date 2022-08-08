@@ -25,7 +25,7 @@ from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 #configuracion
 ###############################################################################
 
-TOKEN = "4e01dc0c56e6f9941836f52ea4255e797119debe6afab3b25bcb0388e285f3977c743bd3d1c25ebcc12991e8332daf8436a69d8bbb4b7212713a367a5eaea23d"
+TOKEN = 
 
 #IBMQ.delete_account()
 IBMQ.save_account(TOKEN)
