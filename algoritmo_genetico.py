@@ -35,6 +35,9 @@ class Individuo:
         numero entero que usa como semilla para generar numeros pseudoaleatorios
         que sirvan para mutar a un individuo existente
 
+    ratio_mutacion : `float`
+        probabilidad de que un evento relacionado con la mutacion suceda
+
     funcion_str_genoma : `funcion`
         funcion personalizada para generar una representacion legible por un
         humano del genoma del individuo
@@ -137,6 +140,9 @@ class Poblacion:
         porcentaje mas cualificados de individuos que debe sobrevivir en cada
         iteracion para reproducirse
 
+    ratio_cruce : `float`
+        probabilidad de que un evento relacionado con el cruce suceda
+
     inmortalidad : `bool`
         flag booleana que indica si los individuos elite son inmortales y por
         lo tanto pasan de una generacion a otra mientras sigan siendo elite
@@ -184,6 +190,7 @@ class Poblacion:
     siguiente_id=0
     size = None
     elitismo = None
+    ratio_cruce = None
     ratio_mutacion = None
     inmortalidad = True
     objetivo = None
@@ -197,7 +204,7 @@ class Poblacion:
     funcion_mutar = None
     funcion_cruzar_genomas = None
 
-    def __init__(self, semilla, size, elitismo, ratio_mutacion, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
+    def __init__(self, semilla, size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
                  funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas):
 
         self.poblacion={}
@@ -207,6 +214,7 @@ class Poblacion:
         self.siguiente_id = self.size
         self.elitismo = elitismo
         self.ratio_mutacion = ratio_mutacion
+        self.ratio_mutacion = ratio_cruce
         self.inmortalidad = inmortalidad
         self.objetivo = self.tipo_objetivo[objetivo]
         self.datos_auxiliares = datos_auxiliares
@@ -249,7 +257,7 @@ class Poblacion:
         individuos : `list[Individuo.genoma]`
             lista de generalmente de los genomas de dos individuos a reproducir
         """
-        genomas = self.funcion_cruzar_genomas(individuos)
+        genomas = self.funcion_cruzar_genomas(self.ratio_cruce, individuos)
         semillas_mutar=np.random.randint(100*self.size, size = 2)
         nuevos_individuos = [Individuo(self.siguiente_id, genomas[0], self.datos_auxiliares, None, semillas_mutar[0], self.ratio_mutacion, self.funcion_str_genoma,
                                         self.funcion_generar_individuo_aleatorio, self.funcion_fitness, self.funcion_mutar),
@@ -457,11 +465,11 @@ class AlgoritmoGenetico:
     tipo_objetivo = {"Maximizar":True,"Minimizar":False}
     verbose = None
 
-    def __init__(self, identificador, iteraciones, limite_fitness, condicion_parada, semilla, size, elitismo, ratio_mutacion,
+    def __init__(self, identificador, iteraciones, limite_fitness, condicion_parada, semilla, size, elitismo, ratio_mutacion, ratio_cruce, 
                  inmortalidad, tipo_seleccion, objetivo, datos_auxiliares, funcion_str_genoma, funcion_generar_individuo_aleatorio,
                  funcion_fitness, funcion_mutar, funcion_cruzar_genomas, verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento):
 
-        self.poblacion = Poblacion(semilla, size, elitismo, ratio_mutacion, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
+        self.poblacion = Poblacion(semilla, size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
                  funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar,
                  funcion_cruzar_genomas)
         self.identificador = identificador

@@ -21,11 +21,13 @@ from qiskit_machine_learning.kernels import QuantumKernel
 from qiskit_machine_learning.datasets import ad_hoc_data
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 
+import algoritmo_genetico
+
 ###############################################################################
 #configuracion
 ###############################################################################
 
-TOKEN = 
+TOKEN = None
 
 #IBMQ.delete_account()
 IBMQ.save_account(TOKEN)
@@ -35,14 +37,16 @@ backend = provider.get_backend('ibmq_qasm_simulator')
 seed = 12345
 algorithm_globals.random_seed = seed
 
-identificador =
-iteraciones =
-limite_fitness =
+identificador = None
+iteraciones = None
+limite_fitness = None
 parada = 3
 condicion_parada = {0:"iteraciones",1:"fitness",2:"iteraciones_and_fitness",3:"iteraciones_or_fitness"}
-semilla =
-size =
-elitismo =
+semilla = None
+size = None
+elitismo = None
+ratio_mutacion = None 
+ratio_cruce = None
 inmortalidad = False
 seleccion = 2
 tipo_seleccion = {0:"Ruleta",1:"Rank",2:"Torneo"}
@@ -52,9 +56,10 @@ verbose = False
 path_resultados = "/home/kubuntulegion/github/TFG/resultados_algoritmo_genetico/"
 ciclos_estancamiento = 3
 diferencia_estancamiento = 0.01
+datos_auxiliares = None
 
-tamaño_maximo =
-n_qbits =
+tamaño_maximo = None
+n_qbits = None
 
 ###############################################################################
 #Datasets
@@ -167,69 +172,69 @@ def getQSVC(kernel, train_features, train_labels, test_features, test_labels):
 ###############################################################################
 #Quantum gates functions
 ###############################################################################
-#ACABAR
-def RX(circuito, qbit):
-    circuito.x(qbit[0])
 
-def RY(circuito, qbit):
-    circuito.y(qbit[0])
+def RX(args):
+    #args [circuito, qbit[a,b], valor]
+    args[0].rx(args[2],args[1][0])
 
-def RZ(circuito, qbit):
-    circuito.z(qbit[0])
+def RY(args):
+    #args [circuito, qbit[a,b], valor]
+    args[0].ry(args[2],args[1][0])
 
-def H(circuito, qbit):
-    circuito.h(qbit[0])
+def RZ(args):
+    #args [circuito, qbit[a,b], valor]
+    args[0].rz(args[2],args[1][0])
 
-def I(circuito, qbit):
-    circuito.id(qbit[0])
+def H(args):
+    #args [circuito, qbit[a,b], valor]
+    args[0].h(args[1][0])
 
-def CX(circuito, qbit):
-    circuito.cx(qbit[0],qbit[1])
+def I(args):
+    #args [circuito, qbit[a,b], valor]
+    args[0].id(args[1][0])
+
+def CX(args):
+    #args [circuito, qbit[a,b], valor]
+    args[0].cx(args[1][0],args[1][0])
 
 funcionesPuertas = [RX,RY,RZ,H,I,CX]
 
 class Puerta:
   tipo = None #1: Rx, 2: Ry, 3: Rz, 4: H, 5: Unidad, 6: Cnot
   qbits = None #lista de 1 o 2 num que representan pos de qbits
+  valor = None #rotacion en las R. Puede ser un valor directo de np.pi*n o un parametro
 
-  def __init__(self,tipo, qbits):
+  def __init__(self,tipo, qbits, valor):
     self.tipo = tipo
     self.qbits = qbits
+    self.valor = valor
 
 
 ###############################################################################
 #Convierte la codificación que simboliza el circuito cuantico al circuito en sí
 ###############################################################################
-#ACABAR
+
 def genoma2Circuito(genoma, n_qbits):
     circuito = QuantumCircuit(n_qbits)
     for i in range(len(genoma)):
         for j in range(len(genoma[i])):
-            funcionesPuertas[genoma[i][j].tipo](circuito, genoma[i][j].qbits)
+            args = [circuito, genoma[i][j].qbits, genoma[i][j].valor]
+            funcionesPuertas[genoma[i][j].tipo](args)
     return circuito
 
 
 ###############################################################################
 #QSVM coding
 ###############################################################################
-#ACABAR
-def getmatriz(self):
-    pass
 
-
-###############################################################################
-#QSVM coding
-###############################################################################
-
-def funcion_str_genoma(self_):  #Lista
-    #
+def funcion_str_genoma(self_):
     return str(genoma2Circuito(self_.genoma, self_.datos_auxiliares[1]))
 
 
 ###############################################################################
 #QSVM coding
 ###############################################################################
-#ACABAR
+
 def funcion_generar_individuo_aleatorio(self_):  #Lista
     genoma = []
     tamaño = random.randint(1, self_.datos_auxiliares[0]+1) #tamaño del individuo
@@ -244,9 +249,11 @@ def funcion_generar_individuo_aleatorio(self_):  #Lista
                 columna.append(Puerta(puerta,[control,target]))
             elif puerta < 6:
                 qbit = qbitList.pop(random.randrange(len(qbitList)))
-                columna.append(Puerta(puerta,[qbit]))
+                valor = None
+                if puerta <= 3:
+                    valor = 2*np.pi*random.random()
+                columna.append(Puerta(puerta,[qbit], valor))
         genoma.append(columna)
-
     return genoma
 
 
@@ -259,10 +266,10 @@ def funcion_fitness(self_):
 
 
 ###############################################################################
-#QSVM coding
+#Muta una columna del genoma de forma aleatoria
 ###############################################################################
-#ACABAR
-def funcion_mutar(self_):  #Lista
+
+def funcion_mutar(self_):  
     for i in range(len(self_.genoma)):
         if random.random() < self_.ratio_mutacion:
             columna = []
@@ -275,17 +282,34 @@ def funcion_mutar(self_):  #Lista
                     columna.append(Puerta(puerta,[control,target]))
                 elif puerta < 6:
                     qbit = qbitList.pop(random.randrange(len(qbitList)))
-                    columna.append(Puerta(puerta,[qbit]))
+                    valor = None
+                    if puerta <= 3:
+                        valor = 2*np.pi*random.random()
+                    columna.append(Puerta(puerta,[qbit], valor))
             self_.genoma[i] = columna
 
 
 ###############################################################################
-#QSVM coding
+#Cruza dos dos individuos intercambiando de manera aleatoria sus columnas
 ###############################################################################
-#ACABAR
-def funcion_cruzar_genomas(individuos):
-    return [(individuos[0]+individuos[1])/2, (2*objetivo-1)*math.sqrt(abs(individuos[0]*individuos[1]))]
 
+def funcion_cruzar_genomas(ratio_cruce, individuos):
+    #Intercambiar las columnas de forma aleatoria entre dos individuos
+    #Seleccionar el grande y el pequenio
+    if len(individuos[0]) >= len(individuos[1]):
+        grande = individuos[0]
+        pequenio = individuos[1]
+    else:
+        grande = individuos[1]
+        pequenio = individuos[0]
+
+    for i in range(len(pequenio)):
+        if random.random() < ratio_cruce:
+            columna = grande[i]
+            grande[i] = pequenio[i]
+            pequenio[i] = columna
+
+    return [pequenio, grande]
 
 
 ###############################################################################
@@ -294,7 +318,7 @@ def funcion_cruzar_genomas(individuos):
 #ACABAR
 print(identificador)
 AG = algoritmo_genetico.AlgoritmoGenetico(identificador, iteraciones, limite_fitness, condicion_parada[parada], semilla, 
-        size, elitismo, ratio_mutacion, inmortalidad, tipo_seleccion[seleccion], tipo_objetivo[objetivo], datos_auxiliares, 
+        size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion[seleccion], tipo_objetivo[objetivo], datos_auxiliares, 
         funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas, 
         verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento)
 AG.ejecutar()
