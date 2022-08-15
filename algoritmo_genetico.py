@@ -103,11 +103,11 @@ class Individuo:
         random.seed(int(self.semilla_generar))
         return self.funcion_generar_individuo_aleatorio(self)
 
-    def calcular_fitness(self):
+    def calcular_fitness(self, datos_auxiliares_poblacion):
         """
         Metodo que calcula el fitness del individuo
         """
-        self.fitness = self.funcion_fitness(self)
+        self.fitness = self.funcion_fitness(self, datos_auxiliares_poblacion)
 
     def _mutar(self):
         """
@@ -205,7 +205,7 @@ class Poblacion:
     funcion_cruzar_genomas = None
 
     def __init__(self, semilla, size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
-                 funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas):
+                 datos_auxiliares_poblacion, funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas):
 
         self.poblacion={}
         self.poblacion_fitness = None
@@ -218,6 +218,7 @@ class Poblacion:
         self.inmortalidad = inmortalidad
         self.objetivo = self.tipo_objetivo[objetivo]
         self.datos_auxiliares = datos_auxiliares
+        self.datos_auxiliares_poblacion = datos_auxiliares_poblacion
         self.seleccion = self.tipo_seleccion[tipo_seleccion]
         self.funciones_seleccion = (self._seleccion_ruleta,self._seleccion_rank,self._seleccion_torneo)
         self.funcion_str_genoma = funcion_str_genoma
@@ -271,7 +272,7 @@ class Poblacion:
         Metodo donde se calcula el fitness de toda la poblacion
         """
         for i in range(len(self.poblacion_fitness[1])):
-            self.poblacion[int(self.poblacion_fitness[0,i])].calcular_fitness()
+            self.poblacion[int(self.poblacion_fitness[0,i])].calcular_fitness(self.datos_auxiliares_poblacion)
             self.poblacion_fitness[1,i] = self.poblacion[self.poblacion_fitness[0,i]].fitness
 
 
@@ -466,11 +467,11 @@ class AlgoritmoGenetico:
     verbose = None
 
     def __init__(self, identificador, iteraciones, limite_fitness, condicion_parada, semilla, size, elitismo, ratio_mutacion, ratio_cruce, 
-                 inmortalidad, tipo_seleccion, objetivo, datos_auxiliares, funcion_str_genoma, funcion_generar_individuo_aleatorio,
+                 inmortalidad, tipo_seleccion, objetivo, datos_auxiliares, datos_auxiliares_poblacion, funcion_str_genoma, funcion_generar_individuo_aleatorio,
                  funcion_fitness, funcion_mutar, funcion_cruzar_genomas, verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento):
 
         self.poblacion = Poblacion(semilla, size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
-                 funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar,
+                 datos_auxiliares_poblacion, funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar,
                  funcion_cruzar_genomas)
         self.identificador = identificador
         self.iteraciones = iteraciones

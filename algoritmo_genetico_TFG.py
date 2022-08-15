@@ -3,7 +3,7 @@
 ###############################################################################
 import math
 import random
-import library_qiskit
+#import library_qiskit
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -57,6 +57,10 @@ path_resultados = "/home/kubuntulegion/github/TFG/resultados_algoritmo_genetico/
 ciclos_estancamiento = 3
 diferencia_estancamiento = 0.01
 datos_auxiliares = None
+#[longitud circuito,n_qbits]
+#ACABAR
+#datos_auxiliares_poblacion [train_features, train_labels, test_features, test_labels]
+datos_auxiliares_poblacion = None
 
 tamaño_maximo = None
 n_qbits = None
@@ -66,6 +70,9 @@ n_qbits = None
 ###############################################################################
 
 #Adhoc
+
+adhoc_dimension = None
+
 def getAdhoc(dimension = 2):
     train_features, train_labels, test_features, test_labels, adhoc_total = ad_hoc_data(
         training_size=20,
@@ -261,9 +268,9 @@ def funcion_generar_individuo_aleatorio(self_):  #Lista
 #Llama a la qsvm y evalua el resultado
 ###############################################################################
 #ACABAR
-def funcion_fitness(self_):
-    return getQSVC(kernel, train_features, train_labels, test_features, test_labels)
-
+def funcion_fitness(self_, datos_auxiliares_poblacion):
+    #datos_auxiliares [train_features, train_labels, test_features, test_labels]
+    return getQSVC(genoma2Circuito(self_.genoma,self_.datos_auxiliares[1]), datos_auxiliares_poblacion[0], datos_auxiliares_poblacion[1], datos_auxiliares_poblacion[2], datos_auxiliares_poblacion[3])
 
 ###############################################################################
 #Muta una columna del genoma de forma aleatoria
@@ -315,12 +322,12 @@ def funcion_cruzar_genomas(ratio_cruce, individuos):
 ###############################################################################
 #GA running
 ###############################################################################
-#ACABAR
+
 print(identificador)
 AG = algoritmo_genetico.AlgoritmoGenetico(identificador, iteraciones, limite_fitness, condicion_parada[parada], semilla, 
         size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion[seleccion], tipo_objetivo[objetivo], datos_auxiliares, 
         funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas, 
-        verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento)
+        datos_auxiliares_poblacion, verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento)
 AG.ejecutar()
 print(AG.historial_mejor_fitness)
 print()
@@ -329,3 +336,4 @@ print()
 print(AG.ganador)
 print()
 AG.plot_historico_fitness()
+#Guardar en un archivo el mejor
