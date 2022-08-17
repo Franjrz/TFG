@@ -22,11 +22,12 @@ from qiskit_machine_learning.datasets import ad_hoc_data
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 
 import algoritmo_genetico
+import copy
 
 ###############################################################################
 #configuracion
 ###############################################################################
-
+#ACABAR
 TOKEN = None
 
 #IBMQ.delete_account()
@@ -133,8 +134,9 @@ def getAdhoc(dimension = 2):
     #plt.show()
     return train_features, train_labels, test_features, test_labels, adhoc_total, plt
 
+#ACABAR
 #Tarjetas
-#Salud
+#Cancer de mama
 #Kernel covariante
 
 
@@ -202,7 +204,7 @@ def I(args):
 
 def CX(args):
     #args [circuito, qbit[a,b], valor]
-    args[0].cx(args[1][0],args[1][0])
+    args[0].cx(args[1][0],args[1][1])
 
 funcionesPuertas = [RX,RY,RZ,H,I,CX]
 
@@ -215,6 +217,8 @@ class Puerta:
     self.tipo = tipo
     self.qbits = qbits
     self.valor = valor
+  def __str__(self):
+    return [self.tipo, self.qbits, self.valor]
 
 
 ###############################################################################
@@ -226,12 +230,12 @@ def genoma2Circuito(genoma, n_qbits):
     for i in range(len(genoma)):
         for j in range(len(genoma[i])):
             args = [circuito, genoma[i][j].qbits, genoma[i][j].valor]
-            funcionesPuertas[genoma[i][j].tipo](args)
+            funcionesPuertas[genoma[i][j].tipo-1](args)
     return circuito
 
 
 ###############################################################################
-#QSVM coding
+#Convierte el circuito a un string entendible por el ser humano
 ###############################################################################
 
 def funcion_str_genoma(self_):
@@ -239,7 +243,7 @@ def funcion_str_genoma(self_):
 
 
 ###############################################################################
-#QSVM coding
+#Genera un individuo aleatorio en funcion de una semilla
 ###############################################################################
 
 def funcion_generar_individuo_aleatorio(self_):  #Lista
@@ -247,13 +251,13 @@ def funcion_generar_individuo_aleatorio(self_):  #Lista
     tamaño = random.randint(1, self_.datos_auxiliares[0]+1) #tamaño del individuo
     for _ in range(tamaño):
         columna = []
-        qbitList = range(self_.datos_auxiliares[1]) # lista de todos los qbits disponibles
+        qbitList = list(range(self_.datos_auxiliares[1])) # lista de todos los qbits disponibles
         while len(qbitList) > 0:
             puerta = random.randint(1, 7)
             if puerta == 6 and len(qbitList) > 1:
                 control = qbitList.pop(random.randrange(len(qbitList)))
                 target = qbitList.pop(random.randrange(len(qbitList)))
-                columna.append(Puerta(puerta,[control,target]))
+                columna.append(Puerta(puerta,[control,target],None))
             elif puerta < 6:
                 qbit = qbitList.pop(random.randrange(len(qbitList)))
                 valor = None
@@ -267,26 +271,26 @@ def funcion_generar_individuo_aleatorio(self_):  #Lista
 ###############################################################################
 #Llama a la qsvm y evalua el resultado
 ###############################################################################
-#ACABAR
+
 def funcion_fitness(self_, datos_auxiliares_poblacion):
-    #datos_auxiliares [train_features, train_labels, test_features, test_labels]
+    #datos_auxiliares_poblacion [train_features, train_labels, test_features, test_labels]
     return getQSVC(genoma2Circuito(self_.genoma,self_.datos_auxiliares[1]), datos_auxiliares_poblacion[0], datos_auxiliares_poblacion[1], datos_auxiliares_poblacion[2], datos_auxiliares_poblacion[3])
 
 ###############################################################################
 #Muta una columna del genoma de forma aleatoria
 ###############################################################################
 
-def funcion_mutar(self_):  
+def funcion_mutar(self_):
     for i in range(len(self_.genoma)):
         if random.random() < self_.ratio_mutacion:
             columna = []
-            qbitList = range(self_.datos_auxiliares[1]) # lista de todos los qbits disponibles
+            qbitList = list(range(self_.datos_auxiliares[1])) # lista de todos los qbits disponibles
             while len(qbitList) > 0:
                 puerta = random.randint(1, 7)
                 if puerta == 6 and len(qbitList) > 1:
                     control = qbitList.pop(random.randrange(len(qbitList)))
                     target = qbitList.pop(random.randrange(len(qbitList)))
-                    columna.append(Puerta(puerta,[control,target]))
+                    columna.append(Puerta(puerta,[control,target],None))
                 elif puerta < 6:
                     qbit = qbitList.pop(random.randrange(len(qbitList)))
                     valor = None
@@ -304,11 +308,11 @@ def funcion_cruzar_genomas(ratio_cruce, individuos):
     #Intercambiar las columnas de forma aleatoria entre dos individuos
     #Seleccionar el grande y el pequenio
     if len(individuos[0]) >= len(individuos[1]):
-        grande = individuos[0]
-        pequenio = individuos[1]
+        grande = copy.deepcopy(individuos[0])
+        pequenio = copy.deepcopy(individuos[1])
     else:
-        grande = individuos[1]
-        pequenio = individuos[0]
+        grande = copy.deepcopy(individuos[1])
+        pequenio = copy.deepcopy(individuos[0])
 
     for i in range(len(pequenio)):
         if random.random() < ratio_cruce:
@@ -336,4 +340,5 @@ print()
 print(AG.ganador)
 print()
 AG.plot_historico_fitness()
+#ACABAR
 #Guardar en un archivo el mejor
