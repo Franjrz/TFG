@@ -2,6 +2,7 @@
 #librerias
 ###############################################################################
 import random
+import math
 #import library_qiskit
 
 import numpy as np
@@ -12,141 +13,112 @@ from qiskit import IBMQ
 from qiskit import *
 from qiskit.circuit import Parameter
 from qiskit import BasicAer
-from qiskit.circuit.library import ZZFeatureMap
 from qiskit.utils import QuantumInstance, algorithm_globals
 from qiskit_machine_learning.algorithms import QSVC
 from qiskit_machine_learning.kernels import QuantumKernel
-from qiskit_machine_learning.datasets import ad_hoc_data, breast_cancer
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
-from qiskit.visualization import plot_bloch_multivector, plot_state_qsphere, plot_histogram
+from qiskit_machine_learning.datasets import ad_hoc_data
 
 import algoritmo_genetico
-import datasets
 import copy
 
 
-###############################################################################
-#configuracion
-###############################################################################
-#ACABAR
-TOKEN = None
-
-#IBMQ.delete_account()
-IBMQ.save_account(TOKEN)
-provider = IBMQ.load_account()
-#backend = provider.get_backend('ibmq_qasm_simulator')
-backend = provider.get_backend('ibmq_qasm_simulator')
-seed = 12345
-algorithm_globals.random_seed = seed
-
-identificador = None
-iteraciones = None
-limite_fitness = None
-parada = 3
-condicion_parada = {0:"iteraciones",1:"fitness",2:"iteraciones_and_fitness",3:"iteraciones_or_fitness"}
-semilla = None
-size = None
-elitismo = None
-ratio_mutacion = None 
-ratio_cruce = None
-inmortalidad = False
-seleccion = 2
-tipo_seleccion = {0:"Ruleta",1:"Rank",2:"Torneo"}
-objetivo = False #True: maximizar, False: minimizar
-tipo_objetivo = {False:"Minimizar",True:"Maximizar"}
-verbose = False
-path_resultados = "/home/kubuntulegion/github/TFG/resultados_algoritmo_genetico/"
-ciclos_estancamiento = 3
-diferencia_estancamiento = 0.01
-datos_auxiliares = None
-#[longitud circuito,n_qbits]
-#ACABAR
-#datos_auxiliares_poblacion [train_features, train_labels, test_features, test_labels]
-datos_auxiliares_poblacion = None
-
-tamaño_maximo = None
-n_qbits = None
 
 ###############################################################################
 #Datasets
 ###############################################################################
 
+IDdataset = 0
+porcentajeTrain = [0.7, None, None]
+dimension_ad_hoc = 3
+extra = [[dimension_ad_hoc,25],None, None]
+
 #Adhoc
-
-adhoc_dimension = 2
-
-train_features, train_labels, test_features, test_labels, adhoc_total, plt = datasets.getAdhoc(adhoc_dimension)
+def ad_hoc(porcentajeTrain, extra):
+    train_features, train_labels, test_features, test_labels = ad_hoc_data(
+        training_size=math.floor(extra[1]*porcentajeTrain),
+        test_size=extra[1] - math.floor(extra[1]*porcentajeTrain),
+        n=extra[0],
+        gap=0.3,
+        plot_data=False,
+        one_hot=False,
+        include_sample_total=True,
+    )
+    return train_features, train_labels, test_features, test_labels
 
 #ACABAR
 #Tarjetas
+def tarjetas(porcentajeTrain, extra):
+    #return train_features, train_labels, test_features, test_labels
+    pass
+
 #ACABAR
-#Cancer de mama
+#Cancer
+def cancer(porcentajeTrain, extra):
+    #return train_features, train_labels, test_features, test_labels
+    pass
 
-training_size = None
-test_size = None
-n = None
-plot_data=False
+get_dataset = [ad_hoc, tarjetas, cancer]
 
-sample_train, training_input, test_input, class_labels = breast_cancer(training_size, test_size, n, plot_data)
-
-class CustomFeatureMap():
-    """Mapping data with a custom feature map."""
-    
-    def __init__(self, feature_dimension, circuit):
-        self._support_parameterized_circuit = False
-        self._feature_dimension = feature_dimension
-        self.num_parameters = self.num_qubits = self._feature_dimension = feature_dimension
-        self._circuit = circuit
-        #Guardarlo despues
-        self.parameters = circuit.parameters
-    
-    def assign_parameters(self, x):
-        return self._circuit.assign_parameters(x)
+train_features, train_labels, test_features, test_labels = get_dataset(porcentajeTrain[IDdataset], extra[IDdataset])
 
 ###############################################################################
-#QSVM coding
+#configuracion
 ###############################################################################
 
-#para otros datos ejecuatar results = qsvc.run(quantum_instance)
-def getQSVC(kernel, train_features, train_labels, test_features, test_labels):
-  #Se genera la QSVC dado su kernel
-  qsvc = QSVC(quantum_kernel=kernel)
-  #Se entrena
-  qsvc.fit(train_features, train_labels)
-  #Se mide su eficiencia en datos nuevos
-  qsvc_score = qsvc.score(test_features, test_labels)
-  return qsvc, qsvc_score
 
-def setParametrosQSVM(backend, circuito, shots, seed_simulator, seed_transpiler, train_features, train_labels, test_features, test_labels):
-  circuito = CustomFeatureMap(circuito.datos_auxiliares[1], genoma2Circuito(circuito.genoma, circuito.datos_auxiliares[1]))
-  quantumInstance = QuantumInstance(backend, shots=shots, seed_simulator=seed_simulator, seed_transpiler=seed_transpiler)
-  kernel = QuantumKernel(feature_map=circuito, quantum_instance=quantumInstance)
-  qsvc, qsvc_score = getQSVC(kernel, train_features, train_labels, test_features, test_labels)
-  return qsvc, qsvc_score
-
-#1024, seed
-
-
-#feature_map es el circuito real
-#quantum_instance es el backend aer
-
-def getKernelClasico(datos, lenMatriz):
-  K = np.zeros((lenMatriz,lenMatriz)) # lenMatriz by lenMatriz matrix
-  for i in range(lenMatriz):
-      for j in range(lenMatriz):
-          K[i,j] = (1 + np.dot(datos[i,:],datos[j,:]))**2
-
-"""
+identificador = ["AD HOC", "Tarjetas", "Cáncer"]
+iteraciones = [None, None, None]
+limite_fitness = [None, None, None]
+parada = [None, None, None]
+condicion_parada = {0:"iteraciones",1:"fitness",2:"iteraciones_and_fitness",3:"iteraciones_or_fitness"}
+semilla = [None, None, None]
+#Tamaño poblacion
+size = [14, None, None]
+elitismo = [None, None, None]
+ratio_mutacion = [0.5, None, None]
+ratio_cruce = [1, None, None]
+inmortalidad = [None, None, None]
+seleccion = [None, None, None]
+tipo_seleccion = {0:"Ruleta",1:"Rank",2:"Torneo"}
+objetivo = [None, None, None] #True: maximizar, False: minimizar
+tipo_objetivo = {False:"Minimizar",True:"Maximizar"}
+verbose = [False, False, False]
+path_resultados = [None, None, None]
+ciclos_estancamiento = [None, None, None]
+diferencia_estancamiento = [None, None, None]
+longitud_maxima = [10,None,None]
+n_qubits = [3,None,None]
+puertas = [0,1,2,3,4,5]
+pcnot = [0.5, 0, 0]
+presto = []
+for i in pcnot:
+    presto.append((1-i)/5)
+ppuertas = [[],[],[]]
+for i in range(len(n_qubits)):
+    for j in range(len(puertas)):
+        if j < 5:
+            ppuertas[i].append(presto[i])
+        else:
+            ppuertas[i].append(pcnot[i])
+#[longitud_maxima, n_qubits, puertas[0,1,2,3,4,5], probabilidad puertas]
+datos_auxiliares = [[],[],[]]
+for i in range(len(n_qubits)):
+    datos_auxiliares[i] = [longitud_maxima[i], n_qubits[i], puertas, ppuertas[i]]
 backend = Aer.get_backend('qasm_simulator')
-circuito = poblacion[10]
 shots = 1024
-seed = 12345
+semilla_cuantica = 12345
+datos_auxiliares_poblacion = [backend, shots, semilla_cuantica, train_features, train_labels, test_features, test_labels]
 
 
-qsvc, qsvc_score = setParametrosQSVM(backend, circuito, shots, seed, seed, train_features, train_labels, test_features, test_labels)
 
-print(qsvc_score)
-"""
+def autenticar(token, backend, seed):
+    #IBMQ.delete_account()
+    IBMQ.save_account(token)
+    provider = IBMQ.load_account()
+    backend = provider.get_backend(backend)
+    algorithm_globals.random_seed = seed
+    return provider, backend
 
 ###############################################################################
 #Quantum gates functions
@@ -308,7 +280,8 @@ def funcion_generar_individuo_aleatorio(self_):
           #Se recorren todos los qubits
           while len(qbitList) > q:
               #Se decide que puerta generar
-              puerta = random.randint(0, 5)
+              puerta = np.random.choice(self_.datos_auxiliares[2], 1, p = self_.datos_auxiliares[3])
+              puerta = puerta[0]
               if puerta == 5 and len(qbitList)-3 >= q:
                   #Se seleccionan los valores de control y target
                   control = qbitList[q]
@@ -338,12 +311,61 @@ def funcion_generar_individuo_aleatorio(self_):
 
 
 ###############################################################################
+#QSVM coding
+###############################################################################
+
+#para otros datos ejecuatar results = qsvc.run(quantum_instance)
+def getQSVC(kernel, train_features, train_labels, test_features, test_labels):
+  #Se genera la QSVC dado su kernel
+  qsvc = QSVC(quantum_kernel=kernel)
+  #Se entrena
+  qsvc.fit(train_features, train_labels)
+  #Se mide su eficiencia en datos nuevos
+  qsvc_score = qsvc.score(test_features, test_labels)
+  return qsvc, qsvc_score
+
+class CustomFeatureMap():
+    """Mapping data with a custom feature map."""
+    
+    def __init__(self, feature_dimension, circuit):
+        self._support_parameterized_circuit = False
+        self._feature_dimension = feature_dimension
+        self.num_parameters = self.num_qubits = self._feature_dimension = feature_dimension
+        self._circuit = circuit
+        #Guardarlo despues
+        self.parameters = circuit.parameters
+    
+    def assign_parameters(self, x):
+        return self._circuit.assign_parameters(x)
+        
+def setParametrosQSVM(backend, circuito, shots, seed_simulator, seed_transpiler, train_features, train_labels, test_features, test_labels):
+  circuito = CustomFeatureMap(circuito.datos_auxiliares[1], genoma2Circuito(circuito.genoma, circuito.datos_auxiliares[1]))
+  quantumInstance = QuantumInstance(backend, shots=shots, seed_simulator=seed_simulator, seed_transpiler=seed_transpiler)
+  kernel = QuantumKernel(feature_map=circuito, quantum_instance=quantumInstance)
+  qsvc, qsvc_score = getQSVC(kernel, train_features, train_labels, test_features, test_labels)
+  return qsvc_score
+
+def getKernelClasico(datos, lenMatriz):
+  K = np.zeros((lenMatriz,lenMatriz))
+  for i in range(lenMatriz):
+      for j in range(lenMatriz):
+          K[i,j] = (1 + np.dot(datos[i,:],datos[j,:]))**2
+
+###############################################################################
 #Llama a la qsvm y evalua el resultado
 ###############################################################################
 
 def funcion_fitness(self_, datos_auxiliares_poblacion):
-    #datos_auxiliares_poblacion [train_features, train_labels, test_features, test_labels]
-    return getQSVC(genoma2Circuito(self_.genoma,self_.datos_auxiliares[1]), datos_auxiliares_poblacion[0], datos_auxiliares_poblacion[1], datos_auxiliares_poblacion[2], datos_auxiliares_poblacion[3])
+    #datos_auxiliares_poblacion [backend, shots, seed, train_features, train_labels, test_features, test_labels]
+    return setParametrosQSVM(datos_auxiliares_poblacion[0], self_, 
+                             datos_auxiliares_poblacion[1], 
+                             datos_auxiliares_poblacion[2], 
+                             datos_auxiliares_poblacion[2], 
+                             datos_auxiliares_poblacion[3], 
+                             datos_auxiliares_poblacion[4], 
+                             datos_auxiliares_poblacion[5], 
+                             datos_auxiliares_poblacion[6])
+
 
 ###############################################################################
 #Muta una columna del genoma de forma aleatoria
@@ -386,7 +408,8 @@ def funcion_mutar(self_):
         #Se recorren todos los qubits
         while len(qbitList) > q:
             #Se decide que puerta generar
-            puerta = random.randint(0, 5)
+            puerta = np.random.choice(self_.datos_auxiliares[2], 1, p = self_.datos_auxiliares[3])
+            puerta = puerta[0]
             if puerta == 5 and len(qbitList)-3 >= q:
                 #Se seleccionan los valores de control y target
                 control = qbitList[q]
@@ -507,10 +530,12 @@ def funcion_cruzar_genomas(ratio_cruce, individuos):
 ###############################################################################
 
 print(identificador)
-AG = algoritmo_genetico.AlgoritmoGenetico(identificador, iteraciones, limite_fitness, condicion_parada[parada], semilla, 
-        size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion[seleccion], tipo_objetivo[objetivo], datos_auxiliares, 
-        funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas, 
-        datos_auxiliares_poblacion, verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento)
+AG = algoritmo_genetico.AlgoritmoGenetico(identificador[IDdataset], iteraciones[IDdataset], limite_fitness[IDdataset], 
+        condicion_parada[parada[IDdataset]], semilla[IDdataset], size[IDdataset], elitismo[IDdataset], ratio_mutacion[IDdataset], 
+        ratio_cruce[IDdataset], inmortalidad[IDdataset], tipo_seleccion[seleccion[IDdataset]], tipo_objetivo[objetivo[IDdataset]], 
+        datos_auxiliares[IDdataset], funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, 
+        funcion_cruzar_genomas, datos_auxiliares_poblacion[IDdataset], verbose[IDdataset], path_resultados[IDdataset], 
+        ciclos_estancamiento[IDdataset], diferencia_estancamiento[IDdataset])
 AG.ejecutar()
 print(AG.historial_mejor_fitness)
 print()
