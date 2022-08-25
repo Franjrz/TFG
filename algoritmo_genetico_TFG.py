@@ -29,15 +29,16 @@ import copy
 ###############################################################################
 
 IDdataset = 0
-porcentajeTrain = [0.7, None, None]
+porcentajeTrain = [0.8, None, None]
 dimension_ad_hoc = 3
 extra = [[dimension_ad_hoc,25],None, None]
 
+
 #Adhoc
 def ad_hoc(porcentajeTrain, extra):
-    train_features, train_labels, test_features, test_labels = ad_hoc_data(
-        training_size=math.floor(extra[1]*porcentajeTrain),
-        test_size=extra[1] - math.floor(extra[1]*porcentajeTrain),
+    train_features, train_labels, test_features, test_labels, adhoc_total = ad_hoc_data(
+        training_size=20,
+        test_size=5,
         n=extra[0],
         gap=0.3,
         plot_data=False,
@@ -60,7 +61,7 @@ def cancer(porcentajeTrain, extra):
 
 get_dataset = [ad_hoc, tarjetas, cancer]
 
-train_features, train_labels, test_features, test_labels = get_dataset(porcentajeTrain[IDdataset], extra[IDdataset])
+train_features, train_labels, test_features, test_labels = get_dataset[IDdataset](porcentajeTrain[IDdataset], extra[IDdataset])
 
 ###############################################################################
 #configuracion
@@ -68,25 +69,25 @@ train_features, train_labels, test_features, test_labels = get_dataset(porcentaj
 
 
 identificador = ["AD HOC", "Tarjetas", "Cáncer"]
-iteraciones = [None, None, None]
-limite_fitness = [None, None, None]
-parada = [None, None, None]
+iteraciones = [2, None, None]
+limite_fitness = [0.8, None, None]
+parada = [0, None, None]
 condicion_parada = {0:"iteraciones",1:"fitness",2:"iteraciones_and_fitness",3:"iteraciones_or_fitness"}
-semilla = [None, None, None]
+semilla = [12345, None, None]
 #Tamaño poblacion
-size = [14, None, None]
-elitismo = [None, None, None]
+size = [5, None, None]
+elitismo = [0.2, None, None]
 ratio_mutacion = [0.5, None, None]
 ratio_cruce = [1, None, None]
-inmortalidad = [None, None, None]
-seleccion = [None, None, None]
+inmortalidad = [True, True, True]
+seleccion = [2, 2, 2]
 tipo_seleccion = {0:"Ruleta",1:"Rank",2:"Torneo"}
-objetivo = [None, None, None] #True: maximizar, False: minimizar
+objetivo = [True, True, True] #True: maximizar, False: minimizar
 tipo_objetivo = {False:"Minimizar",True:"Maximizar"}
-verbose = [False, False, False]
-path_resultados = [None, None, None]
-ciclos_estancamiento = [None, None, None]
-diferencia_estancamiento = [None, None, None]
+verbose = [True, True, True]
+path_resultados = ["/content/drive/MyDrive/TFG", "/content/drive/MyDrive/TFG", "/content/drive/MyDrive/TFG"]
+ciclos_estancamiento = [5, None, None]
+diferencia_estancamiento = [0, None, None]
 longitud_maxima = [10,None,None]
 n_qubits = [3,None,None]
 puertas = [0,1,2,3,4,5]
@@ -108,7 +109,7 @@ for i in range(len(n_qubits)):
 backend = Aer.get_backend('qasm_simulator')
 shots = 1024
 semilla_cuantica = 12345
-datos_auxiliares_poblacion = [backend, shots, semilla_cuantica, train_features, train_labels, test_features, test_labels]
+datos_auxiliares_poblacion = [[backend, shots, semilla_cuantica, train_features, train_labels, test_features, test_labels]]
 
 
 
@@ -516,9 +517,15 @@ def funcion_cruzar_genomas(ratio_cruce, individuos):
   for i in range(len(pequenio.matriz)):
     #Si el numero obtenido es menor al ratio de cruce
     if random.random() <= ratio_cruce:
-      #Se obtienen los qbits libres de cada individuo
-      qbitsOcupadosP = pequenio.columnaspp[i]
-      qbitsOcupadosG = grande.columnaspp[i]
+      #Se obtienen los qbits ocupados de cada individuo
+      if i in pequenio.columnaspp.keys():
+        qbitsOcupadosP = pequenio.columnaspp[i]
+      else:
+        qbitsOcupadosP = []
+      if i in grande.columnaspp.keys():
+        qbitsOcupadosG = grande.columnaspp[i]
+      else:
+        qbitsOcupadosG = []
       #Si tienen la misma dimension se intercambian columnas:
       if len(qbitsOcupadosP) < len(pequenio.matriz[0]) and len(qbitsOcupadosP) == len(qbitsOcupadosG):
           intercambiar_columnas(pequenio.matriz[i], grande.matriz[i])
@@ -529,12 +536,11 @@ def funcion_cruzar_genomas(ratio_cruce, individuos):
 #GA running
 ###############################################################################
 
-print(identificador)
 AG = algoritmo_genetico.AlgoritmoGenetico(identificador[IDdataset], iteraciones[IDdataset], limite_fitness[IDdataset], 
         condicion_parada[parada[IDdataset]], semilla[IDdataset], size[IDdataset], elitismo[IDdataset], ratio_mutacion[IDdataset], 
         ratio_cruce[IDdataset], inmortalidad[IDdataset], tipo_seleccion[seleccion[IDdataset]], tipo_objetivo[objetivo[IDdataset]], 
-        datos_auxiliares[IDdataset], funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, 
-        funcion_cruzar_genomas, datos_auxiliares_poblacion[IDdataset], verbose[IDdataset], path_resultados[IDdataset], 
+        datos_auxiliares[IDdataset], datos_auxiliares_poblacion[IDdataset], funcion_str_genoma, funcion_generar_individuo_aleatorio, 
+        funcion_fitness, funcion_mutar, funcion_cruzar_genomas, verbose[IDdataset], path_resultados[IDdataset], 
         ciclos_estancamiento[IDdataset], diferencia_estancamiento[IDdataset])
 AG.ejecutar()
 print(AG.historial_mejor_fitness)

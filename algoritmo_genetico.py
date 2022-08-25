@@ -66,7 +66,6 @@ class Individuo:
 
     def __init__(self, identificador, datos, datos_auxiliares, semilla_generar, semilla_mutar, ratio_mutacion, funcion_str_genoma,
                  funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar):
-
         self.fitness = None
         self.identificador = identificador
         self.datos_auxiliares = datos_auxiliares
@@ -206,7 +205,6 @@ class Poblacion:
 
     def __init__(self, semilla, size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
                  datos_auxiliares_poblacion, funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar, funcion_cruzar_genomas):
-
         self.poblacion={}
         self.poblacion_fitness = None
 
@@ -214,7 +212,7 @@ class Poblacion:
         self.siguiente_id = self.size
         self.elitismo = elitismo
         self.ratio_mutacion = ratio_mutacion
-        self.ratio_mutacion = ratio_cruce
+        self.ratio_cruce = ratio_cruce
         self.inmortalidad = inmortalidad
         self.objetivo = self.tipo_objetivo[objetivo]
         self.datos_auxiliares = datos_auxiliares
@@ -233,7 +231,8 @@ class Poblacion:
         for i in range(self.size):
             self.poblacion[i]=Individuo(i, None, datos_auxiliares, semillas_generar[i], semillas_mutar[i], ratio_mutacion, funcion_str_genoma,
                                         funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar)
-            self.poblacion_fitness[1,i] = self.poblacion[i].genoma
+            #self.poblacion_fitness[1,i] = self.poblacion[i].genoma
+            self.poblacion_fitness[1,i] = i
 
     def __str__(self):
         string = "    POBLACION"
@@ -469,7 +468,6 @@ class AlgoritmoGenetico:
     def __init__(self, identificador, iteraciones, limite_fitness, condicion_parada, semilla, size, elitismo, ratio_mutacion, ratio_cruce, 
                  inmortalidad, tipo_seleccion, objetivo, datos_auxiliares, datos_auxiliares_poblacion, funcion_str_genoma, funcion_generar_individuo_aleatorio,
                  funcion_fitness, funcion_mutar, funcion_cruzar_genomas, verbose, path_resultados, ciclos_estancamiento, diferencia_estancamiento):
-
         self.poblacion = Poblacion(semilla, size, elitismo, ratio_mutacion, ratio_cruce, inmortalidad, tipo_seleccion, objetivo, datos_auxiliares,
                  datos_auxiliares_poblacion, funcion_str_genoma, funcion_generar_individuo_aleatorio, funcion_fitness, funcion_mutar,
                  funcion_cruzar_genomas)
@@ -539,10 +537,12 @@ class AlgoritmoGenetico:
         Metodo que computa si se debe parar la ejecucion del algoritmo con el
         flag iteraciones
         """
+        """
         condicion = (self.iteracion_actual > self.ciclos_estancamiento) and \
                     (self.diferencia_estancamiento >= abs(self.historial_mejor_fitness[-(self.ciclos_estancamiento)]-self.historial_mejor_fitness[-1])) and \
                     (self.iteracion_actual >= self.iteraciones)
-
+        """
+        condicion = self.iteracion_actual >= self.iteraciones
         if self.verbose:
             print("Comprobando iteraciones\n    Iteracion actual: " + str(self.iteracion_actual) + " Total de iteraciones: " + str(self.iteraciones))
         return condicion
@@ -618,6 +618,7 @@ class AlgoritmoGenetico:
 
         while not self.tipo_condicion_parada[self.condicion_parada]():
             if self.verbose:
+                start_time_iteracion = time.time()
                 print("Iteracion: " + str(self.iteracion_actual) + "/" + str(self.iteraciones))
             if self.verbose:
                 print("Actualizando poblacion")
@@ -629,10 +630,14 @@ class AlgoritmoGenetico:
             if self.verbose:
                 print("Actualizando registro")
             self._actualizar_registro()
+            if self.verbose:
+                end_time_iteracion = time.time()
+                total_time_iteracion = end_time_iteracion - start_time_iteracion
+                print("Iteracion ejecutada en " + str(total_time_iteracion) + " segundos\n")
+
 
         self.end_time = time.time()
         self.total_time = self.end_time - self.start_time
 
         if self.verbose:
             print("Tiempo total " + str(self.total_time) + " segundos\n\n\n")
-
